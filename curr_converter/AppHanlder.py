@@ -29,9 +29,9 @@ def convert():
     to_curr = args.get('to')
     from_curr = args.get('from')
     amount = args.get('amount')
-    date = str(args.get('date'))
+    date = args.get('date')
     if date == None:
-        date = datetime.datetime.now().split()[0]
+        date = str(datetime.datetime.now()).split()[0]
     url = "https://api.apilayer.com/exchangerates_data/convert?to="+to_curr+"&from="+from_curr+"&amount="+amount+"&date="+date
     payload = {}
     headers= {
