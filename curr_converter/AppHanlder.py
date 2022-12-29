@@ -45,3 +45,28 @@ def convert():
                     "output":f"{result['result']} {to_curr.upper()}",
                     "success":result['success']}
     return final_result
+
+
+@appHandler.route('/get-latest')
+def get_latest():
+    args = request.args
+    to_curr = args.get('to')
+    from_curr = args.get('from')
+    print(to_curr)
+    print(type(to_curr))
+    '''
+        if len(to_curr.split(','))>1:
+        tmp=list(to_curr.split(','))
+        print(tmp)
+        to_curr = ",".join(tmp)
+    '''
+    url = f"https://api.apilayer.com/exchangerates_data/latest?symbols={to_curr}&base={from_curr}"
+    print(url)
+    payload = {}
+    headers= {
+        "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
+        }
+    response = requests.request("GET", url, headers=headers, data = payload)
+    result  = response.json()
+    return result
+    
