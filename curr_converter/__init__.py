@@ -1,4 +1,4 @@
-from flask import Flask,request,jsonify
+from flask import Flask
 from flask_pymongo import PyMongo
 from bson.json_util import dumps
 from bson.objectid import ObjectId

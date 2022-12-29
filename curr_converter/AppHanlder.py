@@ -1,6 +1,8 @@
 from flask import Blueprint,jsonify,request
+import json
 import requests
-import datetime
+import datetime 
+from .functions import convert_one
 
 
 appHandler = Blueprint('appHandler',__name__)
@@ -30,21 +32,31 @@ def convert():
     from_curr = args.get('from')
     amount = args.get('amount')
     date = args.get('date')
-    if date == None:
-        date = str(datetime.datetime.now()).split()[0]
-    url = "https://api.apilayer.com/exchangerates_data/convert?to="+to_curr+"&from="+from_curr+"&amount="+amount+"&date="+date
-    payload = {}
-    headers= {
-        "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
-        }
-    response = requests.request("GET", url, headers=headers, data = payload)
-    result  = response.json()
-    final_result = {"date":date,
-                    "conversion":f"{from_curr.upper()} to {to_curr.upper()}",
-                    "input":f"{amount} {from_curr.upper()}",
-                    "output":f"{result['result']} {to_curr.upper()}",
-                    "success":result['success']}
-    return final_result
+    len_curr=to_curr.split(',')
+
+    if len(len_curr) == 1:
+        url = f"https://api.apilayer.com/exchangerates_data/convert?to={to_curr}&from={from_curr}&amount={amount}"
+        if date == None:
+            res=convert_one(url)
+            return jsonify(res)
+        else:
+            res=convert_one(url,date)
+            return jsonify(res)
+    elif len(len_curr) >1:
+        if date == None:
+            res=[]
+            for i in range(len(len_curr)):
+                url = f"https://api.apilayer.com/exchangerates_data/convert?to={len_curr[i]}&from={from_curr}&amount={amount}"
+                res.append(convert_one(url))
+            return jsonify({"result":res})
+        else:
+            res=[]
+            for i in range(len(len_curr)):
+                url = f"https://api.apilayer.com/exchangerates_data/convert?to={len_curr[i]}&from={from_curr}&amount={amount}"
+                res.append(convert_one(url,date))
+            return jsonify({"result":res})
+    else:
+        return jsonify({"At least Enter one Currency Code"})
 
 
 @appHandler.route('/get-latest')
@@ -54,12 +66,7 @@ def get_latest():
     from_curr = args.get('from')
     print(to_curr)
     print(type(to_curr))
-    '''
-        if len(to_curr.split(','))>1:
-        tmp=list(to_curr.split(','))
-        print(tmp)
-        to_curr = ",".join(tmp)
-    '''
+
     url = f"https://api.apilayer.com/exchangerates_data/latest?symbols={to_curr}&base={from_curr}"
     print(url)
     payload = {}
