@@ -9,9 +9,8 @@ def create_app():
     app.config['MONGO_URI'] = "mongodb://localhost:27017/Users"
 
     mongo = PyMongo(app)
+    from .appHanlder import appHandler
 
-    from .AppHanlder import endpoints
-
-    app.register_blueprint(AppHanlder,url_prefix='/login/')
-
+    app.register_blueprint(appHandler,url_prefix='/login')
+    
     return app
