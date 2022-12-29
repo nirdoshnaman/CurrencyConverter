@@ -39,4 +39,9 @@ def convert():
         }
     response = requests.request("GET", url, headers=headers, data = payload)
     result  = response.json()
-    return result
+    final_result = {"date":date,
+                    "conversion":f"{from_curr.upper()} to {to_curr.upper()}",
+                    "input":f"{amount} {from_curr.upper()}",
+                    "output":f"{result['result']} {to_curr.upper()}",
+                    "success":result['success']}
+    return final_result
