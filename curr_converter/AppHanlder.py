@@ -29,12 +29,10 @@ def convert():
     to_curr = args.get('to')
     from_curr = args.get('from')
     amount = args.get('amount')
-    date = args.get('date')
+    date = str(args.get('date'))
     if date == None:
-        date = str(datetime.datetime.now()).split()[0]
-        url = "https://api.apilayer.com/exchangerates_data/convert?to="+to_curr+"&from="+from_curr+"&amount="+amount+"&date="+date
-    else:
-        url = "https://api.apilayer.com/exchangerates_data/convert?to="+to_curr+"&from="+from_curr+"&amount="+amount
+        date = datetime.datetime.now().split()[0]
+    url = "https://api.apilayer.com/exchangerates_data/convert?to="+to_curr+"&from="+from_curr+"&amount="+amount+"&date="+date
     payload = {}
     headers= {
         "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
