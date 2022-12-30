@@ -3,23 +3,23 @@ from bson.json_util import dumps
 from bson.objectid import ObjectId
 import json
 import requests
-import datetime 
-from .functions import convert_one
+
+from .functions import convert_one,check,create_hist,update_hist
 from . import mongo
 
 appHandler = Blueprint('appHandler',__name__)
 
 
-@appHandler.route('/search/<curr_code>')
+@appHandler.route('/search')
 def search(curr_code):
-    code = str(curr_code).upper()
+    args = request.args
+    code = str(args.get('code')).upper()
     url = "https://api.apilayer.com/exchangerates_data/symbols"
     payload = {}
     headers= {
         "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
         }
     response = requests.request("GET", url, headers=headers, data = payload)
-    status_code = response.status_code
     result = response.json()['symbols']
     return jsonify({"Country Currency":result[code],"Currency Code":code})
 
@@ -27,13 +27,17 @@ def search(curr_code):
 @appHandler.route('/convert')
 def convert():
     args = request.args
+    id = int(args.get('id'))
+    chk = mongo.db.user.find_one({'id':id})
+
+    if not chk:
+        return jsonify({"success":False,"message":"Please Enter Valid ID"})
+
     to_curr = args.get('to')
     from_curr = args.get('from')
     amount = args.get('amount')
     date = args.get('date')
-    #id = args.get('id')
-
-
+    
     len_curr=to_curr.split(',')
 
 
@@ -41,9 +45,21 @@ def convert():
         url = f"https://api.apilayer.com/exchangerates_data/convert?to={to_curr}&from={from_curr}&amount={amount}"
         if date == None:
             res=convert_one(url)
+            if(check(chk)):
+                update_hist(id,res)
+            else:
+                hist=[]
+                hist.append(res)
+                create_hist(id,hist)
             return jsonify(res)
         else:
             res=convert_one(url,date)
+            if(check(chk)):
+                update_hist(id,res)
+            else:
+                hist=[]
+                hist.append(res)
+                create_hist(id,hist)
             return jsonify(res)
     elif len(len_curr) >1:
         if date == None:
@@ -59,7 +75,7 @@ def convert():
                 res.append(convert_one(url,date))
             return jsonify({"result":res})
     else:
-        return jsonify({"At least Enter one Currency Code"})
+        return jsonify({"success":False,"message":"At least Enter one Currency Code :("})
 
 
 @appHandler.route('/get-latest')
@@ -83,8 +99,14 @@ def get_latest():
 def get_history():
     args = request.args
     id = int(args.get('id'))
-    tmp = mongo.db.user.find_one({'id':id})
-    if tmp != None:
-        res = json.loads(dumps(tmp))
+    chk = mongo.db.user.find_one({'id':id})
+
+    if not chk:
+        return jsonify("Please Enter Valid ID")
+
+    if(check(chk)):
+        res = json.loads(dumps(chk))
         final_result = {"Name":res['name'],"History":res['history']}
         return final_result
+    else:
+        return jsonify({"success":False,"message":"History Not Present!!! Do Some Conversion First :)"})
