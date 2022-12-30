@@ -1,15 +1,14 @@
 from flask import Blueprint,jsonify,request
+from bson.json_util import dumps
+from bson.objectid import ObjectId
 import json
 import requests
 import datetime 
 from .functions import convert_one
-
+from . import mongo
 
 appHandler = Blueprint('appHandler',__name__)
 
-@appHandler.route('/')
-def login():
-    return "<h1>Login Page</h1>"
 
 @appHandler.route('/search/<curr_code>')
 def search(curr_code):
@@ -32,7 +31,11 @@ def convert():
     from_curr = args.get('from')
     amount = args.get('amount')
     date = args.get('date')
+    #id = args.get('id')
+
+
     len_curr=to_curr.split(',')
+
 
     if len(len_curr) == 1:
         url = f"https://api.apilayer.com/exchangerates_data/convert?to={to_curr}&from={from_curr}&amount={amount}"
@@ -64,11 +67,8 @@ def get_latest():
     args = request.args
     to_curr = args.get('to')
     from_curr = args.get('from')
-    print(to_curr)
-    print(type(to_curr))
 
     url = f"https://api.apilayer.com/exchangerates_data/latest?symbols={to_curr}&base={from_curr}"
-    print(url)
     payload = {}
     headers= {
         "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
@@ -77,3 +77,14 @@ def get_latest():
     result  = response.json()
     return result
     
+
+
+@appHandler.route('/get-history')
+def get_history():
+    args = request.args
+    id = int(args.get('id'))
+    tmp = mongo.db.user.find_one({'id':id})
+    if tmp != None:
+        res = json.loads(dumps(tmp))
+        final_result = {"Name":res['name'],"History":res['history']}
+        return final_result
