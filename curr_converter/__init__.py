@@ -5,7 +5,7 @@ from flask_pymongo import PyMongo
 mongo = PyMongo()
 
 
-def create_app(config_name):
+def create_app():
     app = Flask(__name__,instance_relative_config=False)
     app.config['SECRET_KEY'] = 'naman'
     app.config['MONGO_URI'] = "mongodb://localhost:27017/Users"

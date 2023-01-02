@@ -9,20 +9,21 @@ from . import mongo
 
 appHandler = Blueprint('appHandler',__name__)
 
-
 @appHandler.route('/search')
 def search():
     args = request.args
     code = str(args.get('code')).upper()
-    url = "https://api.apilayer.com/exchangerates_data/symbols"
-    payload = {}
-    headers= {
-        "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
-        }
-    response = requests.request("GET", url, headers=headers, data = payload)
-    result = response.json()['symbols']
-    return jsonify({"Country Currency":result[code],"Currency Code":code})
-
+    if code:
+        url = "https://api.apilayer.com/exchangerates_data/symbols"
+        payload = {}
+        headers= {
+            "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
+            }
+        response = requests.request("GET", url, headers=headers, data = payload)
+        result = response.json()['symbols']
+        return jsonify({"Country Currency":result[code],"Currency Code":code})
+    else:
+        return not_found()
 
 @appHandler.route('/convert')
 def convert():
@@ -130,7 +131,6 @@ def get_latest():
     return jsonify(final_result)
     
 
-
 @appHandler.route('/get-history')
 def get_history():
     args = request.args
@@ -146,6 +146,45 @@ def get_history():
     if(check_hist(chk)):
         res = json.loads(dumps(chk))
         final_result = {"Mobile No.":res['mob'],"History":res['history']}
-        return final_result
+        return jsonify(final_result)
     else:
         return jsonify({"success":False,"message":"History Not Present!!! Do Some Conversion First :)"})
+
+
+@appHandler.route('/get-diff')
+def get_diff():
+    args = request.args
+    to_curr = args.get('to')
+    from_curr = args.get('from')
+    start_date = args.get('start_date')
+    end_date = args.get('end_date')
+
+
+    url = f"https://api.apilayer.com/exchangerates_data/fluctuation?start_date={start_date}&end_date={end_date}&base={from_curr}&symbols={to_curr}"
+    payload = {}
+    headers= {
+    "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
+    }
+
+    response = requests.request("GET", url, headers=headers, data = payload)
+    result = response.json()
+    final_result = {"start_date":result['start_date'],
+                    "end_date":result['end_date'],
+                    "start_rate":result['rates'][str(to_curr).upper()]['start_rate'],
+                    "end_rate":result['rates'][str(to_curr).upper()]['end_rate'],
+                    "input":result['base'],
+                    "output":str(to_curr).upper(),
+                    "change":result['rates'][str(to_curr).upper()]['change'],
+                    "success":result['success']
+                    }
+    return jsonify(final_result)
+
+
+@appHandler.errorhandler(404)
+def not_found(error=None):
+    result = {
+        'status':404,
+        'message':"Not Found " + request.url
+    }
+    final_result = jsonify(result)
+    return jsonify(final_result)
