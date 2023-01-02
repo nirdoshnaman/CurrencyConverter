@@ -2,9 +2,9 @@ from flask import Blueprint,jsonify,request
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 import json
-import requests,time
+import requests
 
-from .functions import convert_one,check_hist,create_hist,update_hist
+from .functions import convert_one,check_hist,create_hist,update_hist,sign_up,delete_hist
 from . import mongo
 
 appHandler = Blueprint('appHandler',__name__)
@@ -27,69 +27,83 @@ def search():
 @appHandler.route('/convert')
 def convert():
     args = request.args
-    id = int(args.get('id'))
-    chk = mongo.db.user.find_one({'id':id})
+    mob = args.get('mob')
+    if(len(str(mob))!=10):
+        return jsonify({"success":False,"message":"Please Enter a Valid 10 Digit Number"})
+    mob = int(mob)
+    chk = mongo.db.user.find_one({'mob':mob})
 
     if not chk:
-        return jsonify({"success":False,"message":"Please Enter Valid ID"})
+        sign_up(mob)
+        chk = mongo.db.user.find_one({'mob':mob})
 
     to_curr = args.get('to')
     from_curr = args.get('from')
     amount = args.get('amount')
     date = args.get('date')
     
-    len_curr=to_curr.split(',')
-
-
-    if len(len_curr) == 1:
+    list_curr = to_curr.split(',')
+    len_curr = len(list_curr)
+    
+    if len_curr == 1:
         url = f"https://api.apilayer.com/exchangerates_data/convert?to={to_curr}&from={from_curr}&amount={amount}"
         if date == None:
             res=convert_one(url)
             if(check_hist(chk)):
-                update_hist(id,res)
+                update_hist(mob,res)
+                chk = mongo.db.user.find_one({'mob':mob})
             else:
                 hist=[]
                 hist.append(res)
-                create_hist(id,hist)
+                create_hist(mob,hist)
 
+            delete_hist(mob)
             return jsonify(res)
         else:
             res=convert_one(url,date)
             if(check_hist(chk)):
-                update_hist(id,res)
+                update_hist(mob,res)
+                chk = mongo.db.user.find_one({'mob':mob})
             else:
                 hist=[]
                 hist.append(res)
-                create_hist(id,hist)
+                create_hist(mob,hist)
+
+            delete_hist(mob)
             return jsonify(res)
-    elif len(len_curr) >1:
+    elif len_curr >1:
         if date == None:
             result=[]
-            for i in range(len(len_curr)):
-                url = f"https://api.apilayer.com/exchangerates_data/convert?to={len_curr[i]}&from={from_curr}&amount={amount}"
+            for i in range(len_curr):
+                url = f"https://api.apilayer.com/exchangerates_data/convert?to={list_curr[i]}&from={from_curr}&amount={amount}"
                 res=convert_one(url)
                 if(check_hist(chk)):
-                    update_hist(id,res)
+                    update_hist(mob,res)
+                    chk = mongo.db.user.find_one({'mob':mob})
                 else:
                     hist=[]
                     hist.append(res)
-                    create_hist(id,hist)
-                    chk = mongo.db.user.find_one({'id':id})
+                    create_hist(mob,hist)
+                    chk = mongo.db.user.find_one({'mob':mob})
                 result.append(res)
+
+            delete_hist(mob)
             return jsonify({"result":result})
         else:
             result=[]
-            for i in range(len(len_curr)):
-                url = f"https://api.apilayer.com/exchangerates_data/convert?to={len_curr[i]}&from={from_curr}&amount={amount}"
+            for i in range(len_curr):
+                url = f"https://api.apilayer.com/exchangerates_data/convert?to={list_curr[i]}&from={from_curr}&amount={amount}"
                 res=convert_one(url,date)
                 if(check_hist(chk)):
-                    update_hist(id,res)
+                    update_hist(mob,res)
+                    chk = mongo.db.user.find_one({'mob':mob})
                 else:
                     hist=[]
                     hist.append(res)
-                    create_hist(id,hist)
-                    chk = mongo.db.user.find_one({'id':id})
+                    create_hist(mob,hist)
+                    chk = mongo.db.user.find_one({'mob':mob})
                 result.append(res)
+            delete_hist(mob)
             return jsonify({"result":result})
     else:
         return jsonify({"success":False,"message":"At least Enter one Currency Code :("})
@@ -113,23 +127,25 @@ def get_latest():
                     "rate":result['rates'],
                     "success":result['success']
                     }
-    return final_result
-    return result
+    return jsonify(final_result)
     
 
 
 @appHandler.route('/get-history')
 def get_history():
     args = request.args
-    id = int(args.get('id'))
-    chk = mongo.db.user.find_one({'id':id})
+    mob = args.get('mob')
+    if(len(str(mob))!=10):
+        return jsonify({"success":False,"message":"Please Enter a Valid 10 Digit Number"})
+    mob = int(mob)
+    chk = mongo.db.user.find_one({'mob':mob})
 
     if not chk:
-        return jsonify({"success":False,"message":"Please Enter Valid ID"})
+        return jsonify({"success":False,"message":"No Record Found"})
 
     if(check_hist(chk)):
         res = json.loads(dumps(chk))
-        final_result = {"Name":res['name'],"History":res['history']}
+        final_result = {"Mobile No.":res['mob'],"History":res['history']}
         return final_result
     else:
         return jsonify({"success":False,"message":"History Not Present!!! Do Some Conversion First :)"})

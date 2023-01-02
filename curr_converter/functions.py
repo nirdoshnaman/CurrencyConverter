@@ -24,13 +24,31 @@ def convert_one(url,date=str(date.today())):
 def check_hist(chk):
     res = json.loads(dumps(chk))
     if 'history' in res:
+        #print("histort present")
         return True
     else:
+        #print("histort absent")
         return False
 
 
-def create_hist(id,hist):
-    mongo.db.user.update_one({'id':id},{'$set':{'history':hist}})
+def create_hist(mob,hist):
+    mongo.db.user.update_one({'mob':mob},{'$set':{'history':hist}})
 
-def update_hist(id,hist):
-    mongo.db.user.update_one({'id':id},{'$push':{'history':hist}})
+def update_hist(mob,hist):
+    mongo.db.user.update_one({'mob':mob},{'$push':{'history':hist}})
+    
+
+
+def sign_up(mob_no):
+    mongo.db.user.insert_one({'mob':mob_no})
+    
+def delete_hist(mob):
+    usr = json.loads(dumps(mongo.db.user.find_one({'mob':mob})))
+    if check_hist(usr):
+        curr_hist_len = len(usr['history'])
+        print(curr_hist_len)
+        if curr_hist_len >5:
+            dlt = curr_hist_len - 5
+            for _ in range(dlt):
+                mongo.db.user.update_one({'mob':mob},{'$pop': {'history': -1}})
+                print("user popped")

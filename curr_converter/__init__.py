@@ -12,9 +12,7 @@ def create_app(config_name):
     mongo.init_app(app)
 
     from .appHanlder import appHandler
-    from .database import database
 
     app.register_blueprint(appHandler,url_prefix='/')
-    app.register_blueprint(database,url_prefix='/')
     
     return app
