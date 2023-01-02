@@ -1,5 +1,4 @@
 import requests
-from flask import request,jsonify
 from datetime import date
 from . import mongo
 import json
@@ -22,7 +21,7 @@ def convert_one(url,date=str(date.today())):
     return final_result
 
 
-def check(chk):
+def check_hist(chk):
     res = json.loads(dumps(chk))
     if 'history' in res:
         return True
