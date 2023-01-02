@@ -13,7 +13,7 @@ appHandler = Blueprint('appHandler',__name__)
 def search():
     args = request.args
     code = str(args.get('code')).upper()
-    if code:
+    try:
         url = "https://api.apilayer.com/exchangerates_data/symbols"
         payload = {}
         headers= {
@@ -22,7 +22,7 @@ def search():
         response = requests.request("GET", url, headers=headers, data = payload)
         result = response.json()['symbols']
         return jsonify({"Country Currency":result[code],"Currency Code":code})
-    else:
+    finally:
         return not_found()
 
 @appHandler.route('/convert')
@@ -186,5 +186,4 @@ def not_found(error=None):
         'status':404,
         'message':"Not Found " + request.url
     }
-    final_result = jsonify(result)
-    return jsonify(final_result)
+    return jsonify(result)
