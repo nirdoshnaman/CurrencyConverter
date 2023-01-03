@@ -9,21 +9,23 @@ from . import mongo
 
 appHandler = Blueprint('appHandler',__name__)
 
-@appHandler.route('/search')
-def search():
+@appHandler.route('/search-code')
+def search_code():
     args = request.args
     code = str(args.get('code')).upper()
-    try:
-        url = "https://api.apilayer.com/exchangerates_data/symbols"
-        payload = {}
-        headers= {
+    url = "https://api.apilayer.com/exchangerates_data/symbols"
+    payload = {}
+    headers= {
             "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
             }
-        response = requests.request("GET", url, headers=headers, data = payload)
-        result = response.json()['symbols']
+    response = requests.request("GET", url, headers=headers, data = payload)
+    result = response.json()['symbols']
+    try:
         return jsonify({"Country Currency":result[code],"Currency Code":code})
-    finally:
-        return not_found()
+    except KeyError:
+        res = {"error":"Currency Not Found"}
+        return jsonify(res)
+        
 
 @appHandler.route('/convert')
 def convert():
@@ -50,6 +52,8 @@ def convert():
         url = f"https://api.apilayer.com/exchangerates_data/convert?to={to_curr}&from={from_curr}&amount={amount}"
         if date == None:
             res=convert_one(url)
+            if 'error' in res:
+                return res
             if(check_hist(chk)):
                 update_hist(mob,res)
                 chk = mongo.db.user.find_one({'mob':mob})
@@ -62,6 +66,8 @@ def convert():
             return jsonify(res)
         else:
             res=convert_one(url,date)
+            if 'error' in res:
+                return res
             if(check_hist(chk)):
                 update_hist(mob,res)
                 chk = mongo.db.user.find_one({'mob':mob})
@@ -78,6 +84,8 @@ def convert():
             for i in range(len_curr):
                 url = f"https://api.apilayer.com/exchangerates_data/convert?to={list_curr[i]}&from={from_curr}&amount={amount}"
                 res=convert_one(url)
+                if 'error' in res:
+                    return res
                 if(check_hist(chk)):
                     update_hist(mob,res)
                     chk = mongo.db.user.find_one({'mob':mob})
@@ -95,6 +103,8 @@ def convert():
             for i in range(len_curr):
                 url = f"https://api.apilayer.com/exchangerates_data/convert?to={list_curr[i]}&from={from_curr}&amount={amount}"
                 res=convert_one(url,date)
+                if 'error' in res:
+                    return res
                 if(check_hist(chk)):
                     update_hist(mob,res)
                     chk = mongo.db.user.find_one({'mob':mob})
@@ -168,7 +178,8 @@ def get_diff():
 
     response = requests.request("GET", url, headers=headers, data = payload)
     result = response.json()
-    final_result = {"start_date":result['start_date'],
+    try:
+        final_result = {"start_date":result['start_date'],
                     "end_date":result['end_date'],
                     "start_rate":result['rates'][str(to_curr).upper()]['start_rate'],
                     "end_rate":result['rates'][str(to_curr).upper()]['end_rate'],
@@ -177,8 +188,31 @@ def get_diff():
                     "change":result['rates'][str(to_curr).upper()]['change'],
                     "success":result['success']
                     }
-    return jsonify(final_result)
+        return jsonify(final_result)
+    except KeyError:
+        return jsonify({"error":"Key Error","success":False})
 
+
+@appHandler.route('/search-name')
+def search_name():
+    args = request.args
+    name = args.get('name')
+    url = "https://api.apilayer.com/exchangerates_data/symbols"
+    payload = {}
+    headers= {
+            "apikey": "xVS82OxCi3LPHFSvNKduOEGUYottHFJT"
+            }
+    response = requests.request("GET", url, headers=headers, data = payload)
+    result = response.json()['symbols']
+    list_res = []
+    for c_code,c_name in result.items():
+        if name in c_name.lower() or name in c_code.lower():
+            list_res.append(f"{c_code}:{c_name}")
+
+    if(len(list_res)==0):
+        return jsonify({"success":False,"message":"No Currency Found"})
+    else:
+        return jsonify(list_res)
 
 @appHandler.errorhandler(404)
 def not_found(error=None):

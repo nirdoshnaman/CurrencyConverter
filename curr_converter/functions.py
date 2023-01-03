@@ -1,4 +1,5 @@
 import requests
+from flask import jsonify
 from datetime import date
 from . import mongo
 import json
@@ -12,14 +13,16 @@ def convert_one(url,date=str(date.today())):
     url = f"{url}&date={date}"
     response = requests.request("GET", url, headers=headers, data = payload)
     result  = response.json()
-    final_result = {"date":date,
+    try:
+        final_result = {"date":date,
                     "conversion":f"{result['query']['from']} to {result['query']['to']}",
                     "input":f"{result['query']['amount']} {result['query']['from']}",
                     "output":f"{result['result']} {result['query']['to']}",
                     "success":result['success']
                     }
-    return final_result
-
+        return final_result
+    except KeyError:
+        return {"error":"Key Error","success":False}
 
 def check_hist(chk):
     if 'history' in chk:
@@ -39,7 +42,7 @@ def update_hist(mob,hist):
 def sign_up(mob_no):
     mongo.db.user.insert_one({'mob':mob_no})
     
-    
+
 def delete_hist(mob):
     usr = json.loads(dumps(mongo.db.user.find_one({'mob':mob})))
     if check_hist(usr):
